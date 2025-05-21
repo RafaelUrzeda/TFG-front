@@ -26,9 +26,7 @@
             </div>
 
             <div class="mb-3">
-                <label for="authToken" class="form-label"
-                    >Token de Autorización</label
-                >
+                <label for="authToken" class="form-label">Token de Autorización</label>
                 <input
                     type="text"
                     class="form-control"
@@ -46,7 +44,7 @@
         <div v-if="response" class="card">
             <div class="card-body">
                 <h5 class="card-title">Respuesta de la Actualización</h5>
-                <pre style="white-space: pre-wrap">{{ formattedResponse }}</pre>
+                <pre class="jsonview" v-html="formattedResponse"></pre>
             </div>
         </div>
     </div>
@@ -61,9 +59,33 @@ const authToken = ref("");
 const response = ref(null);
 const error = ref(null);
 
-const formattedResponse = computed(() =>
-    JSON.stringify(response.value, null, 2)
-);
+// Función que aplica resaltado de sintaxis al JSON
+function highlightJson(json) {
+    if (!json) return '';
+    json = JSON.stringify(json, null, 2);
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    return json.replace(
+        /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+        function (match) {
+            let cls = 'number';
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'key';
+                } else {
+                    cls = 'string';
+                }
+            } else if (/true|false/.test(match)) {
+                cls = 'boolean';
+            } else if (/null/.test(match)) {
+                cls = 'null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+        }
+    );
+}
+
+const formattedResponse = computed(() => highlightJson(response.value));
 
 const submitUpdate = async () => {
     error.value = null;
@@ -93,3 +115,36 @@ const submitUpdate = async () => {
     }
 };
 </script>
+
+<style>
+.jsonview {
+    border-radius: 3px;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    max-height: 600px;
+    overflow-y: auto;
+    background-color: #f8f8f8;
+    white-space: pre-wrap;
+}
+
+.jsonview .string {
+    color: green;
+}
+
+.jsonview .number {
+    color: darkorange;
+}
+
+.jsonview .boolean {
+    color: blue;
+}
+
+.jsonview .null {
+    color: magenta;
+}
+
+.jsonview .key {
+    color: red;
+}
+</style>
